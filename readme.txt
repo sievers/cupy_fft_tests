@@ -6,7 +6,7 @@ in Fourier space).
 No build script, but you can compile as follows:
 nvcc -o libpycufft.so pycufft.cu -shared -lcufft -Xcompiler -fPIC -lgomp
 
-then, assuming you're in the same director and have "." in your LD_LIBRARY_PATH,
+then, assuming you're in the same directory and have "." in your LD_LIBRARY_PATH,
 you can run:
 
 python3 cupy_vs_shared_plans.py

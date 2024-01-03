@@ -48,28 +48,34 @@ outdat=[cp.reshape(obuf[:sz[0]*sz[1]],[sz[0],sz[1]]) for sz in sizes]
 
 
 for iter in range(5):
+    cp.cuda.runtime.deviceSynchronize()
     t1=time.time()
     for i in range(nchunk):
         pycufft.rfft(indat[i],ftdat[i],plan_cache=plans)
         pycufft.irfft(ftdat[i],outdat[i],sizes[i][1],plan_cache=plans)
+    cp.cuda.runtime.deviceSynchronize()
     t2=time.time()
     print('took ',t2-t1,' total seconds on iter ',iter,' for average time ',(t2-t1)/(nchunk*2),' per transform')
 
 
 ft=cp.fft.rfft(indat[0],axis=1) #do a first fft just to make sure it's warmed up
 for iter in range(5):
+    cp.cuda.runtime.deviceSynchronize()
     t1=time.time()
     for i in range(nchunk):
         ft=cp.fft.rfft(indat[i],axis=1)
         out=cp.fft.irfft(ft,axis=1,n=sizes[i][1])
+    cp.cuda.runtime.deviceSynchronize()
     t2=time.time()
     print('naive cupy took ',t2-t1,' seconds on iter ',iter,', for average time ',(t2-t1)/(nchunk*2),' per transform')
 
 cache = cp.fft.config.get_plan_cache()
 for iter in range(5):
+    cp.cuda.runtime.deviceSynchronize()
     t1=time.time()
     for i in range(nchunk):
         ft=cp.fft.rfft(indat[i],axis=1)
         out=cp.fft.irfft(ft,axis=1,n=sizes[i][1])
+    cp.cuda.runtime.deviceSynchronize()
     t2=time.time()
     print('planned cupy took ',t2-t1,' seconds on iter ',iter,', for average time ',(t2-t1)/(nchunk*2),' per transform')
