@@ -267,6 +267,49 @@ extern "C" {
 }
 	
 /*--------------------------------------------------------------------------------*/
+
+extern "C" {
+  void get_empty_plan_r2c(int n, int m, int axis,cufftHandle *plan)
+{
+  if (cufftCreate(plan)!=CUFFT_SUCCESS) {
+    fprintf(stderr,"Error creating bare-bones fft plan.\n");
+  }
+  if (cufftSetAutoAllocation(*plan,0)!=CUFFT_SUCCESS) {
+    fprintf(stderr,"error setting auto-allocate to false.\n");
+  }
+  
+  if (axis==1) {
+    size_t sz=0;
+    if (cufftMakePlan1d(*plan,m,CUFFT_R2C,n,&sz)!=CUFFT_SUCCESS)
+      fprintf(stderr,"Error planning dft in get_empty_plan_r2c.\n");
+  }
+  
+}
+}
+
+/*--------------------------------------------------------------------------------*/
+
+extern "C" {
+  void get_empty_plan_c2r(int n, int m, int axis,cufftHandle *plan)
+{
+  if (cufftCreate(plan)!=CUFFT_SUCCESS) {
+    fprintf(stderr,"Error creating bare-bones fft plan.\n");
+  }
+  if (cufftSetAutoAllocation(*plan,0)!=CUFFT_SUCCESS) {
+    fprintf(stderr,"error setting auto-allocate to false.\n");
+  }
+    if (axis==1) {
+      size_t sz=0;
+      if (cufftMakePlan1d(*plan,m,CUFFT_C2R,n,&sz)!=CUFFT_SUCCESS)
+	fprintf(stderr,"Error planning dft in get_empty_plan_c2r.\n");
+      //if (cufftPlan1d(plan,m,CUFFT_C2R,n)!=CUFFT_SUCCESS)
+      //fprintf(stderr,"Error planning dft in get_empty_plan_c2r.\n");
+  }
+  
+}
+}
+	
+/*--------------------------------------------------------------------------------*/
 extern "C" {
 void get_plan_c2r(int n, int m, int axis,cufftHandle *plan,int alloc)
 //make sure n and m correspond to the size of the *output* transform

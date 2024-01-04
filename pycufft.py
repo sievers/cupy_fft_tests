@@ -17,14 +17,20 @@ cufft_c2r_gpu_wplan.argtypes=(ctypes.c_void_p,ctypes.c_void_p,ctypes.c_void_p)
 
 get_plan_r2c_gpu=mylib.get_plan_r2c
 get_plan_r2c_gpu.argtypes=(ctypes.c_int,ctypes.c_int,ctypes.c_int,ctypes.c_void_p,ctypes.c_int)
+
+get_empty_plan_r2c_gpu=mylib.get_empty_plan_r2c
+get_empty_plan_r2c_gpu.argtypes=(ctypes.c_int,ctypes.c_int,ctypes.c_int,ctypes.c_void_p)
 get_plan_c2r_gpu=mylib.get_plan_c2r
 get_plan_c2r_gpu.argtypes=(ctypes.c_int,ctypes.c_int,ctypes.c_int,ctypes.c_void_p,ctypes.c_int)
+get_empty_plan_c2r_gpu=mylib.get_empty_plan_c2r
+get_empty_plan_c2r_gpu.argtypes=(ctypes.c_int,ctypes.c_int,ctypes.c_int,ctypes.c_void_p)
+
 
 get_plan_size_gpu=mylib.get_plan_size
 get_plan_size_gpu.argtypes=(ctypes.c_void_p,ctypes.c_void_p)
 destroy_plan_gpu=mylib.destroy_plan
 destroy_plan_gpu.argtypes=(ctypes.c_void_p,)
-set_plan_scratch_gpu=mylib.set_plan_scratch
+
 set_plan_scratch_gpu=mylib.set_plan_scratch
 set_plan_scratch_gpu.argtypes=(ctypes.c_int,ctypes.c_void_p)
 
@@ -37,18 +43,24 @@ def set_plan_scratch(plan,buf):
     set_plan_scratch_gpu(plan[0],buf.data.ptr)
 def get_plan_r2c(n,m,axis=1,alloc=1):
     plan=np.empty(1,dtype='int32') #I checked, and sizeof(plan) is 4 bytes
-    get_plan_r2c_gpu(n,m,axis,plan.ctypes.data,alloc)
+    if alloc:
+        get_plan_r2c_gpu(n,m,axis,plan.ctypes.data,alloc)
+    else:
+        get_empty_plan_r2c_gpu(n,m,axis,plan.ctypes.data)
     return plan
 
 def get_plan_c2r(n,m,axis=1,alloc=1):
     plan=np.empty(1,dtype='int32')
-    get_plan_c2r_gpu(n,m,axis,plan.ctypes.data,alloc)
+    if alloc:
+        get_plan_c2r_gpu(n,m,axis,plan.ctypes.data,alloc)
+    else:
+        get_empty_plan_c2r_gpu(n,m,axis,plan.ctypes.data)
     return plan
 
 def destroy_plan(plan):
     destroy_plan_gpu(plan.ctypes.data)
 
-def rfft(dat,out=None,axis=1,plan=None,plan_cache=None):
+def rfft(dat,out=None,axis=1,plan=None,plan_cache=None,plan_buf=None):
     if not(dat.dtype=='float32'):
         print("warning - only float32 is supported in pycufft.rfft.  casting")
         x=cp.asarray(x,dtype='float32')    
@@ -56,6 +68,8 @@ def rfft(dat,out=None,axis=1,plan=None,plan_cache=None):
     m=dat.shape[1]
     if not(plan_cache is None):
         plan=plan_cache.get_plan(n,m,True)
+        if not(plan_buf is None):
+            set_plan_scratch(plan,plan_buf)
     if not(out is None):
         if not(out.dtype=='complex64'):
             print('warning - only complex64 is supported for rfft output in pycufft.rfft. allocating new storage')
@@ -70,7 +84,7 @@ def rfft(dat,out=None,axis=1,plan=None,plan_cache=None):
     else:
         cufft_r2c_gpu_wplan(out.data.ptr,dat.data.ptr,n,m,axis,plan.ctypes.data)
     return out
-def irfft(dat,out=None,axis=1,isodd=0,plan=None,plan_cache=None):
+def irfft(dat,out=None,axis=1,isodd=0,plan=None,plan_cache=None,plan_buf=None):
     n=dat.shape[0]
     m=dat.shape[1]
     isodd=isodd%2
@@ -90,6 +104,8 @@ def irfft(dat,out=None,axis=1,isodd=0,plan=None,plan_cache=None):
             out=cp.empty([n,mm],dtype='float32')
     if not(plan_cache is None):
         plan=plan_cache.get_plan(n,mm,False)
+        if not(plan_buf is None):
+            set_plan_scratch(plan,plan_buf)
     if plan is None:
         cufft_c2r_gpu(out.data.ptr,dat.data.ptr,n,m,axis,isodd)
     else:
